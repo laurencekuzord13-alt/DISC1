@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test DISC — Analyse comportementale</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --d-color: #E24B4A; --d-light: #FCEBEB; --d-dark: #791F1F;
+  --i-color: #EF9F27; --i-light: #FFF3DC; --i-dark: #633806;
+  --s-color: #639922; --s-light: #EAF3DE; --s-dark: #27500A;
+  --c-color: #378ADD; --c-light: #E6F1FB; --c-dark: #0C447C;
+  --bg: #F9F8F5; --surface: #FFFFFF; --border: #E4E2DA;
+  --text: #1A1A18; --muted: #6B6B66;
+  --radius: 12px; --radius-sm: 8px;
+}
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; padding: 2rem 1rem;
+}
+.wrap { max-width: 740px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 2.5rem; }
+.tag {
+  display: inline-block; background: #EEEDFE; color: #3C3489;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  padding: 4px 14px; border-radius: 20px; margin-bottom: 14px; text-transform: uppercase;
+}
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; line-height: 1.2; }
+.subtitle { font-size: 15px; color: var(--muted); line-height: 1.6; max-width: 520px; margin: 0 auto; }
+.profiles-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 2.5rem; }
+.profile-badge { border-radius: var(--radius); padding: 14px 10px; text-align: center; border: 1px solid rgba(0,0,0,0.07); }
+.profile-badge .letter { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.profile-badge .pname { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.profile-badge .kw { font-size: 11px; line-height: 1.5; opacity: 0.75; }
+.d-badge { background: var(--d-light); } .d-badge .letter, .d-badge .pname { color: var(--d-dark); }
+.i-badge { background: var(--i-light); } .i-badge .letter, .i-badge .pname { color: var(--i-dark); }
+.s-badge { background: var(--s-light); } .s-badge .letter, .s-badge .pname { color: var(--s-dark); }
+.c-badge { background: var(--c-light); } .c-badge .letter, .c-badge .pname { color: var(--c-dark); }
+.progress-wrap { margin-bottom: 1.5rem; }
+.progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.progress-label { font-size: 13px; color: var(--muted); }
+.progress-pct { font-size: 13px; font-weight: 600; }
+.progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--text); border-radius: 3px; transition: width 0.4s ease; width: 8%; }
+.question-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.question-text { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; line-height: 1.5; }
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.option-btn { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; font-size: 13px; color: var(--text); cursor: pointer; text-align: left; line-height: 1.45; font-family: inherit; transition: border-color 0.15s, background 0.15s; }
+.option-btn:hover { border-color: #aaa; background: #fff; }
+.sel-D { background: var(--d-light) !important; border-color: var(--d-color) !important; color: var(--d-dark) !important; font-weight: 500; }
+.sel-I { background: var(--i-light) !important; border-color: var(--i-color) !important; color: var(--i-dark) !important; font-weight: 500; }
+.sel-S { background: var(--s-light) !important; border-color: var(--s-color) !important; color: var(--s-dark) !important; font-weight: 500; }
+.sel-C { background: var(--c-light) !important; border-color: var(--c-color) !important; color: var(--c-dark) !important; font-weight: 500; }
+.nav { display: flex; gap: 10px; justify-content: flex-end; margin-top: 0.5rem; }
+.btn { border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 22px; font-size: 14px; font-weight: 500; background: transparent; color: var(--text); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.btn:hover:not(:disabled) { background: var(--bg); border-color: #aaa; }
+.btn.primary { background: var(--text); color: #fff; border-color: transparent; }
+.btn.primary:hover:not(:disabled) { background: #333; }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+#result-section { display: none; }
+.result-header { text-align: center; margin-bottom: 2rem; }
+.result-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.result-header p { font-size: 14px; color: var(--muted); }
+.bars-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.bars-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 1rem; }
+.bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.bar-row:last-child { margin-bottom: 0; }
+.bar-label { width: 115px; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+.bar-track { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 5px; width: 0%; transition: width 0.7s ease; }
+.bar-pct { width: 38px; font-size: 13px; font-weight: 600; color: var(--muted); text-align: right; flex-shrink: 0; }
+.dominant-card { border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.25rem; border: 1px solid rgba(0,0,0,0.07); }
+.dom-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px; }
+.dominant-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+.dominant-card p { font-size: 14px; line-height: 1.7; }
+.dom-D { background: var(--d-light); } .dom-D .dom-tag, .dom-D h3 { color: var(--d-dark); }
+.dom-I { background: var(--i-light); } .dom-I .dom-tag, .dom-I h3 { color: var(--i-dark); }
+.dom-S { background: var(--s-light); } .dom-S .dom-tag, .dom-S h3 { color: var(--s-dark); }
+.dom-C { background: var(--c-light); } .dom-C .dom-tag, .dom-C h3 { color: var(--c-dark); }
+.traits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+.trait-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+.t-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px; }
+.t-content { font-size: 13px; line-height: 1.6; }
+.footer-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+.footer-card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
+.footer-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.cta-link { display: inline-block; background: var(--text); color: #fff; border-radius: var(--radius-sm); padding: 10px 22px; font-size: 14px; font-weight: 500; text-decoration: none; }
+.cta-link:hover { background: #333; }
+.disclaimer { font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) {
+  .profiles-row { grid-template-columns: repeat(2, 1fr); }
+  .options { grid-template-columns: 1fr; }
+  .traits-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="tag">Methode Marston &middot; 1928</div>
+    <h1>Test DISC<br>Analyse comportementale</h1>
+    <p class="subtitle">Identifiez votre profil parmi les 4 styles comportementaux. Repondez instinctivement en choisissant ce qui vous correspond le mieux.</p>
+  </div>
+
+  <div class="profiles-row">
+    <div class="profile-badge d-badge">
+      <div class="letter">D</div><div class="pname">Dominance</div>
+      <div class="kw">Resultats &middot; Decision &middot; Defi</div>
+    </div>
+    <div class="profile-badge i-badge">
+      <div class="letter">I</div><div class="pname">Influence</div>
+      <div class="kw">Enthousiasme &middot; Contact &middot; Creativite</div>
+    </div>
+    <div class="profile-badge s-badge">
+      <div class="letter">S</div><div class="pname">Stabilite</div>
+      <div class="kw">Patience &middot; Loyaute &middot; Harmonie</div>
+    </div>
+    <div class="profile-badge c-badge">
+      <div class="letter">C</div><div class="pname">Conformite</div>
+      <div class="kw">Analyse &middot; Rigueur &middot; Precision</div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz-section">
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="progress-label" id="progress-label">Question 1 / 12</span>
+        <span class="progress-pct" id="progress-pct">8%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="question-card">
+      <p class="question-text" id="question-text"></p>
+      <div class="options" id="options-container"></div>
+    </div>
+    <div class="nav">
+      <button class="btn" id="prev-btn">&#8592; Precedent</button>
+      <button class="btn primary" id="next-btn">Suivant &#8594;</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="result-section">
+    <div class="result-header">
+      <h2>Votre profil DISC</h2>
+      <p>Resultats bases sur vos 12 reponses &mdash; aucun profil n'est superieur a un autre</p>
+    </div>
+    <div class="bars-card">
+      <div class="bars-title">Repartition de vos reponses</div>
+      <div id="result-bars"></div>
+    </div>
+    <div id="dominant-card" class="dominant-card"></div>
+    <div class="traits-grid" id="traits-grid"></div>
+    <div class="footer-card">
+      <p>Pour approfondir votre profil, une formation certifiante DISC (methode Marston, 6 modules de 1/2 a 1 jour) vous permettra d'adapter votre communication et management au quotidien.</p>
+      <div class="footer-actions">
+        <a class="cta-link" href="https://www.discprofile.com/what-is-disc" target="_blank">En savoir plus sur le DISC</a>
+        <button class="btn" id="restart-btn">&#8635; Recommencer</button>
+      </div>
+      <p class="disclaimer">Ce test est indicatif. Un questionnaire certifie TTI Success Insights est recommande pour un profil complet.</p>
+    </div>
+  </div>
+
+</div>
+<script>
+var Q = [
+  { q: "Face a un probleme au travail, votre premiere reaction est de :", opts: [
+    { t: "Agir immediatement et trouver une solution rapide", p: "D" },
+    { t: "En parler a l'equipe pour federer tout le monde", p: "I" },
+    { t: "Prendre le temps de comprendre avant d'agir", p: "S" },
+    { t: "Analyser toutes les donnees disponibles", p: "C" }]},
+  { q: "En reunion, vous etes surtout reconnu(e) pour :", opts: [
+    { t: "Votre capacite a prendre des decisions rapides", p: "D" },
+    { t: "Votre enthousiasme et votre capacite a motiver", p: "I" },
+    { t: "Votre ecoute et votre soutien aux autres", p: "S" },
+    { t: "La qualite et la precision de vos analyses", p: "C" }]},
+  { q: "Lorsqu'un projet change de direction, vous :", opts: [
+    { t: "Adaptez rapidement le plan et prenez les renes", p: "D" },
+    { t: "Cherchez a maintenir une atmosphere positive", p: "I" },
+    { t: "Avez besoin de temps pour vous adapter", p: "S" },
+    { t: "Demandez davantage d'informations avant d'agir", p: "C" }]},
+  { q: "Ce qui vous motive le plus dans votre travail :", opts: [
+    { t: "Atteindre des objectifs ambitieux et depasser des defis", p: "D" },
+    { t: "Creer des liens forts et travailler en equipe", p: "I" },
+    { t: "Contribuer a un environnement stable et harmonieux", p: "S" },
+    { t: "Produire un travail de haute qualite, sans erreur", p: "C" }]},
+  { q: "Quand vous communiquez, vous avez tendance a :", opts: [
+    { t: "Aller droit au but, etre direct et concis", p: "D" },
+    { t: "Etre expressif, chaleureux et persuasif", p: "I" },
+    { t: "Ecouter attentivement avant de vous exprimer", p: "S" },
+    { t: "Etre factuel, precis et structure", p: "C" }]},
+  { q: "Dans un projet d'equipe, vous prenez naturellement le role de :", opts: [
+    { t: "Leader qui decide et fixe le cap", p: "D" },
+    { t: "Animateur qui federe et dynamise", p: "I" },
+    { t: "Soutien fiable qui assure la continuite", p: "S" },
+    { t: "Expert qui garantit la qualite et les methodes", p: "C" }]},
+  { q: "Sous pression, vous avez tendance a :", opts: [
+    { t: "Devenir plus autoritaire ou impatient", p: "D" },
+    { t: "Manquer de rigueur ou de suivi dans les taches", p: "I" },
+    { t: "Resister au changement ou eviter les conflits", p: "S" },
+    { t: "Etre percu comme froid ou trop perfectionniste", p: "C" }]},
+  { q: "Votre style de prise de decision :", opts: [
+    { t: "Rapide et assumee, meme avec peu d'informations", p: "D" },
+    { t: "Basee sur les retours et l'adhesion de l'equipe", p: "I" },
+    { t: "Prudente, vous prenez le temps de la reflexion", p: "S" },
+    { t: "Methodique, vous analysez toutes les options", p: "C" }]},
+  { q: "Ce que les autres apprecient le plus chez vous :", opts: [
+    { t: "Votre efficacite et votre orientation resultats", p: "D" },
+    { t: "Votre optimisme et votre creativite", p: "I" },
+    { t: "Votre fiabilite et votre sens de l'ecoute", p: "S" },
+    { t: "Votre rigueur et votre respect des procedures", p: "C" }]},
+  { q: "Vous preferez travailler dans un environnement ou :", opts: [
+    { t: "Vous avez de l'autonomie et des defis stimulants", p: "D" },
+    { t: "Il y a de la collaboration et des interactions", p: "I" },
+    { t: "Il regne de la stabilite et une bonne ambiance", p: "S" },
+    { t: "Les regles sont claires et la qualite valorisee", p: "C" }]},
+  { q: "Quand vous avez un objectif, vous :", opts: [
+    { t: "Foncez et trouvez comment le depasser", p: "D" },
+    { t: "Partagez votre vision et embarquez les autres", p: "I" },
+    { t: "Progressez de facon constante et methodique", p: "S" },
+    { t: "Planifiez soigneusement chaque etape", p: "C" }]},
+  { q: "En cas de desaccord avec un collegue, vous :", opts: [
+    { t: "Exprimez clairement votre point de vue sans detour", p: "D" },
+    { t: "Cherchez un terrain d'entente de facon positive", p: "I" },
+    { t: "Evitez le conflit et preferez la diplomatie", p: "S" },
+    { t: "Appuyez votre position sur des faits et donnees", p: "C" }]}
+];
+
+var P = {
+  D: { name:"Dominance", color:"#E24B4A",
+    desc:"Vous etes oriente(e) resultats, decision et efficacite. Vous aimez relever des defis et prendre les renes en situation complexe. Votre leadership naturel et votre rapidite d'action sont vos atouts majeurs.",
+    forces:"Prise de decision rapide, leadership naturel, orientation resultats, esprit competitif.",
+    vigilance:"Peut paraitre autoritaire ou impatient(e) sous pression. Pensez a laisser de la place aux autres.",
+    communication:"Soyez direct(e), allez a l'essentiel. Presentez les benefices concrets et les defis a relever.",
+    formation:"M5 - DISC et Management  |  M4 - Adapter sa communication" },
+  I: { name:"Influence", color:"#EF9F27",
+    desc:"Vous etes naturellement communicant(e), enthousiaste et tourne(e) vers les relations humaines. Votre capacite a federer et a convaincre fait de vous un excellent animateur d'equipe.",
+    forces:"Communication naturelle, capacite a federer, creativite, optimisme contagieux.",
+    vigilance:"Peut manquer de rigueur ou de suivi dans les details. Attention a la dispersion.",
+    communication:"Faites preuve d'enthousiasme, valorisez la relation. Soyez positif(ve).",
+    formation:"M4 - Adapter sa communication  |  M6 - DISC et Performance commerciale" },
+  S: { name:"Stabilite", color:"#639922",
+    desc:"Vous etes une personne fiable, patiente et loyale. Vous contribuez a creer un environnement de travail harmonieux. Votre ecoute active et votre constance sont precieuses pour l'equipe.",
+    forces:"Ecoute active, loyaute, capacite a stabiliser le groupe, fiabilite et constance.",
+    vigilance:"Peut resister au changement ou eviter les conflits. Affirmez davantage votre point de vue.",
+    communication:"Montrez votre sincerite, respectez le rythme. Evitez la precipitation.",
+    formation:"M3 - Decoder les autres profils  |  M4 - Adapter sa communication" },
+  C: { name:"Conformite", color:"#378ADD",
+    desc:"Vous etes analytique, methodique et soucieux(se) de la qualite. Votre rigueur et votre attention aux details garantissent des livrables fiables et des processus structures.",
+    forces:"Rigueur analytique, sens du detail, respect des procedures, haute qualite de travail.",
+    vigilance:"Peut etre percu(e) comme froid(e) ou perfectionniste. Acceptez parfois une certaine flexibilite.",
+    communication:"Fournissez des donnees precises. Respectez les procedures. Soyez logique et structure(e).",
+    formation:"M2 - Se connaitre, son profil DISC  |  M5 - DISC et Management" }
+};
+
+var cur = 0;
+var ans = new Array(Q.length).fill(null);
+
+function updateProgress() {
+  var pct = Math.max(8, Math.round(((cur + 1) / Q.length) * 100));
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = 'Question ' + (cur + 1) + ' / ' + Q.length;
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+function renderQ() {
+  var q = Q[cur];
+  document.getElementById('question-text').textContent = q.q;
+  var container = document.getElementById('options-container');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  q.opts.forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'option-btn' + (ans[cur] === opt.p ? ' sel-' + opt.p : '');
+    btn.textContent = opt.t;
+    btn.addEventListener('click', function() {
+      ans[cur] = opt.p;
+      container.querySelectorAll('.option-btn').forEach(function(b) {
+        b.className = 'option-btn';
+      });
+      btn.className = 'option-btn sel-' + opt.p;
+      document.getElementById('next-btn').disabled = false;
+    });
+    container.appendChild(btn);
+  });
+
+  updateProgress();
+  document.getElementById('prev-btn').disabled = cur === 0;
+  var nb = document.getElementById('next-btn');
+  nb.disabled = ans[cur] === null;
+  nb.textContent = cur === Q.length - 1 ? 'Voir mes resultats' : 'Suivant \u2192';
+}
+
+function showResults() {
+  var scores = {D:0, I:0, S:0, C:0};
+  ans.forEach(function(a) { if (a) scores[a]++; });
+  var sorted = Object.entries(scores).sort(function(a, b) { return b[1] - a[1]; });
+  var dom = sorted[0][0];
+  var p = P[dom];
+
+  document.getElementById('quiz-section').style.display = 'none';
+  document.getElementById('result-section').style.display = 'block';
+  window.scrollTo(0, 0);
+
+  // Bars
+  var barsEl = document.getElementById('result-bars');
+  barsEl.innerHTML = '';
+  var fills = [];
+  sorted.forEach(function(item) {
+    var k = item[0], v = item[1];
+    var pct = Math.round((v / Q.length) * 100);
+    var row = document.createElement('div'); row.className = 'bar-row';
+    var lbl = document.createElement('span'); lbl.className = 'bar-label';
+    lbl.textContent = k + ' - ' + P[k].name; lbl.style.color = P[k].color;
+    var track = document.createElement('div'); track.className = 'bar-track';
+    var fill = document.createElement('div'); fill.className = 'bar-fill';
+    fill.style.background = P[k].color; fill.style.width = '0%';
+    fills.push({el: fill, pct: pct});
+    track.appendChild(fill);
+    var pctEl = document.createElement('span'); pctEl.className = 'bar-pct';
+    pctEl.textContent = pct + '%';
+    row.appendChild(lbl); row.appendChild(track); row.appendChild(pctEl);
+    barsEl.appendChild(row);
+  });
+  setTimeout(function() { fills.forEach(function(f) { f.el.style.width = f.pct + '%'; }); }, 80);
+
+  // Dominant card
+  var dc = document.getElementById('dominant-card');
+  dc.className = 'dominant-card dom-' + dom;
+  dc.innerHTML = '';
+  var tag = document.createElement('div'); tag.className = 'dom-tag'; tag.textContent = 'Profil dominant';
+  var h3 = document.createElement('h3'); h3.textContent = dom + ' - ' + p.name;
+  var desc = document.createElement('p'); desc.textContent = p.desc;
+  dc.appendChild(tag); dc.appendChild(h3); dc.appendChild(desc);
+
+  // Traits
+  var tg = document.getElementById('traits-grid');
+  tg.innerHTML = '';
+  [{t:'Forces principales', c:p.forces},{t:'Point de vigilance', c:p.vigilance},
+   {t:'Communiquer avec vous', c:p.communication},{t:'Modules recommandes', c:p.formation}
+  ].forEach(function(item) {
+    var box = document.createElement('div'); box.className = 'trait-box';
+    var tt = document.createElement('div'); tt.className = 't-title'; tt.textContent = item.t;
+    var tc = document.createElement('div'); tc.className = 't-content'; tc.textContent = item.c;
+    box.appendChild(tt); box.appendChild(tc); tg.appendChild(box);
+  });
+}
+
+document.getElementById('prev-btn').addEventListener('click', function() {
+  if (cur > 0) { cur--; renderQ(); }
+});
+document.getElementById('next-btn').addEventListener('click', function() {
+  if (ans[cur] === null) return;
+  if (cur < Q.length - 1) { cur++; renderQ(); }
+  else { showResults(); }
+});
+document.getElementById('restart-btn').addEventListener('click', function() {
+  cur = 0; ans = new Array(Q.length).fill(null);
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('quiz-section').style.display = 'block';
+  renderQ(); window.scrollTo(0, 0);
+});
+
+renderQ();
+</script>
+</body>
+</html>
